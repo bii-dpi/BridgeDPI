@@ -10,19 +10,28 @@ from torch.backends import cudnn
 from tqdm import tqdm
 from Others import *
 
+
 class BaseClassifier:
     def __init__(self):
         pass
+
+
     def calculate_y_logit(self, X, XLen):
         pass
-    def cv_train(self, dataClass, trainSize=256, batchSize=256, epoch=100, stopRounds=10, earlyStop=10, saveRounds=1, 
-                 optimType='Adam', preheat=5, lr1=0.001, lr2=0.00003, momentum=0.9, weightDecay=0, kFold=5, isHigherBetter=True, metrics="AUC", report=["ACC", "AUC"], 
+
+
+    def cv_train(self, dataClass, trainSize=256, batchSize=256,
+                 epoch=100, stopRounds=10, earlyStop=10, saveRounds=1,
+                 optimType='Adam', preheat=5, lr1=0.001, lr2=0.00003, momentum=0.9, weightDecay=0,
+                 kFold=5, isHigherBetter=True, metrics="AUC", report=["ACC", "AUC"],
                  savePath='model', seed=9527, loc=-1):
+        # Lorem ipsum.
         skf = StratifiedKFold(n_splits=kFold, random_state=seed, shuffle=True)
         validRes = []
-        tvIdList = list(range(dataClass.trainSampleNum+dataClass.validSampleNum))#dataClass.trainIdList+dataClass.validIdList
+        tvIdList = list(range(dataClass.trainSampleNum + dataClass.validSampleNum))#dataClass.trainIdList+dataClass.validIdList
         #self._save_emb('cache/_preEmbedding.pkl')
-        for i,(trainIndices,validIndices) in enumerate(skf.split(tvIdList, [i[2] for i in dataClass.eSeqData])):
+
+        for i, (trainIndices, validIndices) in enumerate(skf.split(tvIdList, [i[2] for i in dataClass.eSeqData])):
             print(f'CV_{i+1}:')
             if loc>0 and i+1!=loc:
                 print(f'Pass CV_{i+1}')
@@ -35,13 +44,19 @@ class BaseClassifier:
                              isHigherBetter,metrics,report,f"{savePath}_cv{i+1}")
             validRes.append(res)
         Metrictor.table_show(validRes, report)
-    def cv_train_by_protein(self, dataClass, trainSize=256, batchSize=256, epoch=100, stopRounds=10, earlyStop=10, saveRounds=1, 
-                 optimType='Adam', preheat=5, lr1=0.001, lr2=0.00003, momentum=0.9, weightDecay=0, kFold=5, isHigherBetter=True, metrics="AUC", report=["ACC", "AUC"], 
-                 savePath='model', seed=9527, loc=-1):
+
+
+    def cv_train_by_protein(self, dataClass, trainSize=256, batchSize=256,
+                            epoch=100, stopRounds=10, earlyStop=10, saveRounds=1,
+                            optimType='Adam', preheat=5, lr1=0.001, lr2=0.00003, momentum=0.9, weightDecay=0,
+                            kFold=5, isHigherBetter=True, metrics="AUC", report=["ACC", "AUC"],
+                            savePath='model', seed=9527, loc=-1):
+        # Lorem ipsum.
         kf = KFold(n_splits=kFold, random_state=seed, shuffle=True)
         validRes = []
         proteins = list(range(len(dataClass.p2id)))#dataClass.trainIdList+dataClass.validIdList
         #self._save_emb('cache/_preEmbedding.pkl')
+
         for i,(trainProteins,validProteins) in enumerate(kf.split(proteins)):
             print(f'CV_{i+1}:')
             if loc>0 and i+1!=loc:
@@ -49,15 +64,17 @@ class BaseClassifier:
                 continue
             self.reset_parameters()
             #self._load_emb('cache/_preEmbedding.pkl')
-            
+
             dataClass.trainIdList = [i for i in range(len(dataClass.eSeqData)) if dataClass.eSeqData[i,0] in trainProteins]
             dataClass.validIdList = [i for i in range(len(dataClass.eSeqData)) if dataClass.eSeqData[i,0] in validProteins]
             dataClass.trainSampleNum,dataClass.validSampleNum = len(dataClass.trainIdList),len(dataClass.validIdList)
-            
+
             res = self.train(dataClass,trainSize,batchSize,epoch,stopRounds,earlyStop,saveRounds,optimType,preheat,lr1,lr2,momentum,weightDecay,
                              isHigherBetter,metrics,report,f"{savePath}_cv{i+1}")
             validRes.append(res)
         Metrictor.table_show(validRes, report)
+
+
     def get_optimizer(self, optimType, lr, weightDecay, momentum):
         if optimType=='Adam':
             return torch.optim.Adam(self.moduleList.parameters(), lr=lr, weight_decay=weightDecay)
@@ -65,8 +82,8 @@ class BaseClassifier:
             return torch.optim.AdamW(self.moduleList.parameters(), lr=lr, weight_decay=weightDecay)
         elif optimType=='SGD':
             return torch.optim.SGD(self.moduleList.parameters(), lr=lr, momentum=momentum, weight_decay=weightDecay)
-    def train(self, dataClass, trainSize=256, batchSize=256, epoch=100, stopRounds=10, earlyStop=10, saveRounds=1, 
-              optimType='Adam', preheat=5, lr1=0.001, lr2=0.00003, momentum=0.9, weightDecay=0, isHigherBetter=True, metrics="AUC", report=["ACC", "AUC"], 
+    def train(self, dataClass, trainSize=256, batchSize=256, epoch=100, stopRounds=10, earlyStop=10, saveRounds=1,
+              optimType='Adam', preheat=5, lr1=0.001, lr2=0.00003, momentum=0.9, weightDecay=0, isHigherBetter=True, metrics="AUC", report=["ACC", "AUC"],
               savePath='model'):
         dataClass.describe()
         assert batchSize%trainSize==0
@@ -161,7 +178,7 @@ class BaseClassifier:
             stateDict[module.name] = module.state_dict()
         if dataClass is not None:
             #stateDict['trainIdList'],stateDict['validIdList'],stateDict['testIdList'] = dataClass.trainIdList,dataClass.validIdList,dataClass.testIdList
-            if 'am2id' in stateDict: 
+            if 'am2id' in stateDict:
                 stateDict['am2id'],stateDict['id2am'] = dataClass.am2id,dataClass.id2am
             if 'go2id' in stateDict:
                 stateDict['go2id'],stateDict['id2go'] = dataClass.go2id,dataClass.id2go
@@ -213,7 +230,7 @@ class BaseClassifier:
     def calculate_loss(self, X, Y):
         out = self.calculate_y_logit(X, 'predict')
         Y_logit = out['y_logit']
-        
+
         addLoss = 0.0
         if 'loss' in out: addLoss += out['loss']
         return self.criterion(Y_logit, Y) + addLoss
@@ -232,7 +249,7 @@ class BaseClassifier:
             Y_pre,Y = self.calculate_y_prob(X, mode='predict').cpu().data.numpy(),Y.cpu().data.numpy()
             YArr.append(Y)
             Y_preArr.append(Y_pre)
-        YArr,Y_preArr = np.hstack(YArr).astype('int32'),np.hstack(Y_preArr).astype('float32')
+        YArr,Y_preArr = np.concatenate(YArr).astype('int32'),np.concatenate(Y_preArr).astype('float32')
         return Y_preArr, YArr
     # def calculate_y_by_iterator(self, dataStream):
     #     Y_preArr, YArr = self.calculate_y_prob_by_iterator(dataStream)
@@ -261,102 +278,18 @@ class BaseClassifier:
             #self.schedulerWU.zero_grad()
         return loss*self.stepUpdate
 
-class DTI_E2E(BaseClassifier):
-    def __init__(self, amEmbedding, goEmbedding, atEmbedding, seqMaxLen,
-                 rnnHiddenSize=16, gcnHiddenSize=64, gcnSkip=3, fcHiddenSize=32, dropout=0.1, gama=0.0005, 
-                 embFreeze=False, sampleType='PWRL', device=torch.device('cuda')):
-        self.amEmbedding = TextEmbedding(torch.tensor(amEmbedding,dtype=torch.float32), dropout, freeze=embFreeze, name='amEmbedding').to(device)
-        self.goEmbedding = TextEmbedding(torch.tensor(goEmbedding,dtype=torch.float32), dropout, freeze=False, name='goEmbedding').to(device)
-        self.atEmbedding = TextEmbedding(torch.tensor(atEmbedding,dtype=torch.float32), dropout, freeze=embFreeze, name='atEmbedding').to(device)
-        self.pBiLSTM = TextLSTM(amEmbedding.shape[1], rnnHiddenSize, bidirectional=False, name='pBiLSTM').to(device)
-        self.dGCN = GCN(atEmbedding.shape[0], atEmbedding.shape[1], gcnHiddenSize, [gcnHiddenSize]*(gcnSkip-1), name='dGCN').to(device)
-        self.U = MLP(gcnHiddenSize,rnnHiddenSize, dropout=0.0, name='U').to(device)
-        self.pFcLinear = MLP(rnnHiddenSize, fcHiddenSize, [fcHiddenSize]*2, dropout=dropout, name='pFcLinear').to(device)
-        self.dFcLinear = MLP(gcnHiddenSize, fcHiddenSize, [fcHiddenSize]*2, dropout=dropout, name='dFcLinear').to(device)
-        self.criterion = PairWiseRankingLoss(gama) if sampleType=='PWRL' else torch.nn.BCEWithLogitsLoss()
-        self.embModuleList = nn.ModuleList([self.amEmbedding,self.goEmbedding,self.atEmbedding])
-        self.finetunedEmbList = nn.ModuleList([self.amEmbedding,self.goEmbedding,self.atEmbedding])
-        self.moduleList = nn.ModuleList([self.amEmbedding,self.goEmbedding,self.atEmbedding,
-                                         self.pBiLSTM,self.dGCN,self.U,self.pFcLinear,self.dFcLinear])
-        self.sampleType = sampleType
-        self.device = device
-    def calculate_y_logit(self, X, mode='train'):
-        Xam,Xgo,Xat = X['aminoSeq'],X['goSeq'],X['atomGra'] # => batchSize1 × amSeqLen, batchSize1 × goSeqLen, batchSize2 × nodeNum × nodeNum
-        Xam = self.amEmbedding(Xam) # => batchSize1 × amSeqLen × amSize, batchSize1 × goSeqLen × goSize
-        Xgo = self.goEmbedding(Xgo)
-        Xam = self.pBiLSTM(Xam) # => batchSize1 × amSeqLen × rnnHiddenSize
-
-        P = torch.cat([Xam, Xgo], dim=1) # => batchSize1 × (amSeqLen+goSeqLen) × rnnHiddenSize
-        D = self.dGCN(self.atEmbedding.embedding.weight, Xat) # => batchSize2 × nodeNum × gcnHiddenSize
-        
-        if mode=='train':
-            P = P.unsqueeze(dim=1) # => batchSize1 × 1 × (amSeqLen+goSeqLen) × rnnHiddenSize
-            D = D.unsqueeze(dim=0) # => 1 × batchSize2 × nodeNum × gcnHiddenSize
-        
-        alpha = F.tanh( torch.matmul(torch.matmul(P,self.U.out.weight),D.transpose(-1,-2)) ) # => batchSize1 × batchSize2 × (amSeqLen+goSeqLen) × nodeNum
-        pAlpha,_ = torch.max(alpha, dim=-1) # => batchSize1 × batchSize2 × (amSeqLen+goSeqLen)
-        dAlpha,_ = torch.max(alpha, dim=-2) # => batchSize1 × batchSize2 × nodeNum
-
-        pAlpha = F.softmax(pAlpha, dim=-1).unsqueeze(dim=-2) # => batchSize1 × batchSize2 × 1 × (amSeqLen+goSeqLen)
-        dAlpha = F.softmax(dAlpha, dim=-1).unsqueeze(dim=-2) # => batchSize1 × batchSize2 × 1 × nodeNum
-
-        Xp,Xd = torch.matmul(pAlpha,P).squeeze(dim=-2),torch.matmul(dAlpha,D).squeeze(dim=-2) # => batchSize1 × batchSiz2 × rnnHiddenSize, batchSize1 × batchSize2 × gcnHiddenSize
-        Xp,Xd = self.pFcLinear(Xp),self.dFcLinear(Xd) # => batchSize1 × batchSiz2 × fcHiddenSize, batchSize1 × batchSiz2 × fcHiddenSize
-        return {"y_logit":torch.sum(Xp*Xd, dim=-1)} # => batchSize1 × batchSiz2
-
-class DTI_E2E_nogo(BaseClassifier):
-    def __init__(self, amEmbedding, atEmbedding, seqMaxLen,
-                 rnnHiddenSize=16, gcnHiddenSize=64, gcnSkip=3, fcHiddenSize=32, dropout=0.1, gama=0.0005, 
-                 embFreeze=False, sampleType='PWRL', device=torch.device('cuda')):
-        self.amEmbedding = TextEmbedding(torch.tensor(amEmbedding,dtype=torch.float32), dropout, freeze=embFreeze, name='amEmbedding').to(device)
-        self.atEmbedding = TextEmbedding(torch.tensor(atEmbedding,dtype=torch.float32), dropout, freeze=embFreeze, name='atEmbedding').to(device)
-        self.pBiLSTM = TextLSTM(amEmbedding.shape[1], rnnHiddenSize, bidirectional=False, name='pBiLSTM').to(device)
-        self.dGCN = GCN(atEmbedding.shape[0], atEmbedding.shape[1], gcnHiddenSize, [gcnHiddenSize]*(gcnSkip-1), name='dGCN').to(device)
-        self.U = MLP(gcnHiddenSize,rnnHiddenSize, dropout=0.0, name='U').to(device)
-        self.pFcLinear = MLP(rnnHiddenSize, fcHiddenSize, [fcHiddenSize]*2, dropout=dropout, name='pFcLinear').to(device)
-        self.dFcLinear = MLP(gcnHiddenSize, fcHiddenSize, [fcHiddenSize]*2, dropout=dropout, name='dFcLinear').to(device)
-        self.criterion = PairWiseRankingLoss(gama) if sampleType=='PWRL' else torch.nn.BCEWithLogitsLoss()
-        self.embModuleList = nn.ModuleList([self.amEmbedding,self.atEmbedding])
-        self.finetunedEmbList = nn.ModuleList([self.amEmbedding,self.atEmbedding])
-        self.moduleList = nn.ModuleList([self.amEmbedding,self.atEmbedding,
-                                         self.pBiLSTM,self.dGCN,self.U,self.pFcLinear,self.dFcLinear])
-        self.sampleType = sampleType
-        self.device = device
-    def calculate_y_logit(self, X, mode='train'):
-        Xam,Xat = X['aminoSeq'],X['atomGra'] # => batchSize1 × amSeqLen, batchSize1 × goSeqLen, batchSize2 × nodeNum × nodeNum
-        Xam = self.amEmbedding(Xam) # => batchSize1 × amSeqLen × amSize, batchSize1 × goSeqLen × goSize
-        Xam = self.pBiLSTM(Xam) # => batchSize1 × amSeqLen × rnnHiddenSize
-
-        P = Xam # => batchSize1 × (amSeqLen+goSeqLen) × rnnHiddenSize
-        D = self.dGCN(self.atEmbedding.embedding.weight, Xat) # => batchSize2 × nodeNum × gcnHiddenSize
-        
-        if mode=='train':
-            P = P.unsqueeze(dim=1) # => batchSize1 × 1 × (amSeqLen+goSeqLen) × rnnHiddenSize
-            D = D.unsqueeze(dim=0) # => 1 × batchSize2 × nodeNum × gcnHiddenSize
-        
-        alpha = F.tanh( torch.matmul(torch.matmul(P,self.U.out.weight),D.transpose(-1,-2)) ) # => batchSize1 × batchSize2 × (amSeqLen+goSeqLen) × nodeNum
-        pAlpha,_ = torch.max(alpha, dim=-1) # => batchSize1 × batchSize2 × (amSeqLen+goSeqLen)
-        dAlpha,_ = torch.max(alpha, dim=-2) # => batchSize1 × batchSize2 × nodeNum
-
-        pAlpha = F.softmax(pAlpha, dim=-1).unsqueeze(dim=-2) # => batchSize1 × batchSize2 × 1 × (amSeqLen+goSeqLen)
-        dAlpha = F.softmax(dAlpha, dim=-1).unsqueeze(dim=-2) # => batchSize1 × batchSize2 × 1 × nodeNum
-
-        Xp,Xd = torch.matmul(pAlpha,P).squeeze(dim=-2),torch.matmul(dAlpha,D).squeeze(dim=-2) # => batchSize1 × batchSiz2 × rnnHiddenSize, batchSize1 × batchSize2 × gcnHiddenSize
-        Xp,Xd = self.pFcLinear(Xp),self.dFcLinear(Xd) # => batchSize1 × batchSiz2 × fcHiddenSize, batchSize1 × batchSiz2 × fcHiddenSize
-        return {"y_logit":torch.sum(Xp*Xd, dim=-1)} # => batchSize1 × batchSiz2
 
 class DTI_Bridge(BaseClassifier):
-    def __init__(self, outSize, 
-                 cHiddenSizeList, 
-                 fHiddenSizeList, 
+    def __init__(self, outSize,
+                 cHiddenSizeList,
+                 fHiddenSizeList,
                  fSize=1024, cSize=8422,
                  gcnHiddenSizeList=[], fcHiddenSizeList=[], nodeNum=32, resnet=True,
-                 hdnDropout=0.1, fcDropout=0.2, device=torch.device('cuda'), sampleType='CEL', 
-                 useFeatures = {"kmers":True,"pSeq":True,"FP":True,"dSeq":True}, 
+                 hdnDropout=0.1, fcDropout=0.2, device=torch.device('cuda'), sampleType='CEL',
+                 useFeatures = {"kmers":True,"pSeq":True,"FP":True,"dSeq":True},
                  maskDTI=False):
-        
         self.nodeEmbedding = TextEmbedding(torch.tensor(np.random.normal(size=(max(nodeNum,0),outSize)), dtype=torch.float32), dropout=hdnDropout, name='nodeEmbedding').to(device)
-        
+
         self.amEmbedding = TextEmbedding(torch.eye(24), dropout=hdnDropout, freeze=True, name='amEmbedding').to(device)
         self.pCNN = TextCNN(24, 64, [25], ln=True, name='pCNN').to(device)
         self.pFcLinear = MLP(64, outSize, dropout=hdnDropout, bnEveryLayer=True, dpEveryLayer=True, outBn=True, outAct=True, outDp=True, name='pFcLinear').to(device)
@@ -366,16 +299,16 @@ class DTI_Bridge(BaseClassifier):
 
         self.fFcLinear = MLP(fSize, outSize, fHiddenSizeList, outAct=True, name='fFcLinear', dropout=hdnDropout, dpEveryLayer=True, outDp=True, bnEveryLayer=True, outBn=True).to(device)
         self.cFcLinear = MLP(cSize, outSize, cHiddenSizeList, outAct=True, name='cFcLinear', dropout=hdnDropout, dpEveryLayer=True, outDp=True, bnEveryLayer=True, outBn=True).to(device)
-        
+
         self.nodeGCN = GCN(outSize, outSize, gcnHiddenSizeList, name='nodeGCN', dropout=hdnDropout, dpEveryLayer=True, outDp=True, bnEveryLayer=True, outBn=True, resnet=resnet).to(device)
-        
+
         self.fcLinear = MLP(outSize, 1, fcHiddenSizeList, dropout=fcDropout, bnEveryLayer=True, dpEveryLayer=True).to(device)
 
         self.criterion = nn.BCEWithLogitsLoss()
-        
+
         self.embModuleList = nn.ModuleList([])
         self.finetunedEmbList = nn.ModuleList([])
-        self.moduleList = nn.ModuleList([self.nodeEmbedding,self.cFcLinear,self.fFcLinear,self.nodeGCN,self.fcLinear, 
+        self.moduleList = nn.ModuleList([self.nodeEmbedding,self.cFcLinear,self.fFcLinear,self.nodeGCN,self.fcLinear,
                                          self.amEmbedding, self.pCNN, self.pFcLinear, self.dCNN, self.dFcLinear])
         self.sampleType = sampleType
         self.device = device
@@ -384,6 +317,7 @@ class DTI_Bridge(BaseClassifier):
         self.hdnDropout = hdnDropout
         self.useFeatures = useFeatures
         self.maskDTI = maskDTI
+
     def calculate_y_logit(self, X, mode='train'):
         Xam = (self.cFcLinear(X['aminoCtr']).unsqueeze(1) if self.useFeatures['kmers'] else 0) + \
               (self.pFcLinear(self.pCNN(self.amEmbedding(X['aminoSeq']))).unsqueeze(1) if self.useFeatures['pSeq'] else 0) # => batchSize × 1 × outSize
@@ -393,7 +327,7 @@ class DTI_Bridge(BaseClassifier):
         if self.nodeNum>0:
             node = self.nodeEmbedding.dropout2(self.nodeEmbedding.dropout1(self.nodeEmbedding.embedding.weight)).repeat(len(Xat), 1, 1)
             node = torch.cat([Xam, Xat, node], dim=1) # => batchSize × nodeNum × outSize
-            nodeDist = torch.sqrt(torch.sum(node**2,dim=2,keepdim=True)+1e-8)# => batchSize × nodeNum × 1 
+            nodeDist = torch.sqrt(torch.sum(node**2,dim=2,keepdim=True)+1e-8)# => batchSize × nodeNum × 1
 
             cosNode = torch.matmul(node,node.transpose(1,2)) / (nodeDist*nodeDist.transpose(1,2)+1e-8) # => batchSize × nodeNum × nodeNum
             #cosNode = cosNode*0.5 + 0.5
@@ -412,9 +346,11 @@ class DTI_Bridge(BaseClassifier):
         #    node_gcned += torch.cat([Xam[:,0,:],Xat[:,0,:]],dim=1)
         return {"y_logit":self.fcLinear(node_embed).squeeze(dim=1)}#, "loss":1*l2}
 
+
 def get_index(seqData, sP, sD):
     sPsD = [i[0] in sP and i[1] in sD for i in seqData]
     sPuD = [i[0] in sP and i[1] not in sD for i in seqData]
     uPsD = [i[0] not in sP and i[1] in sD for i in seqData]
     uPuD = [i[0] not in sP and i[1] not in sD for i in seqData]
     return sPsD,sPuD,uPsD,uPuD
+

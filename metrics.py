@@ -1,6 +1,8 @@
 import numpy as np
 from sklearn import metrics as skmetrics
 import warnings
+from collections import Counter
+
 warnings.filterwarnings("ignore")
 
 def lgb_MaF(preds, dtrain):
@@ -63,7 +65,7 @@ class Metrictor:
         return F1(self.Y_pre, self.Y)
     def LOSS(self):
         return LOSS(self.Y_prob_pre,self.Y)
-    
+
 
 def ACC(Y_pre, Y):
     return (Y_pre==Y).sum() / len(Y)
@@ -85,4 +87,4 @@ def LOSS(Y_prob_pre, Y):
     Y_prob_pre[Y_prob_pre>0.99] -= 1e-3
     Y_prob_pre[Y_prob_pre<0.01] += 1e-3
     return -np.mean(Y*np.log(Y_prob_pre) + (1-Y)*np.log(1-Y_prob_pre))
-    
+
