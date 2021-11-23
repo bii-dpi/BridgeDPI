@@ -41,10 +41,18 @@ read_direction <- function(direction) {
 
 
 plot_direction_stat <- function(direction, data, metric) {
+  peak_fn <- ifelse(metric == "BCE", min, max)
+  
+  peak <- data %>%
+    filter(mode_ == "External validation") %>%
+    .[[metric]] %>%
+    peak_fn(.) %>%
+    round(3)
+    
   plot <- ggplot(data, aes_string(x = "Epoch", y = metric, color = "Seed")) +
-    geom_line() +
+    geom_line(size = 1.2) +
     theme_classic() +
-    ggtitle(glue("{metric}\n{DIRECTIONS[direction]}")) +
+    ggtitle(glue("{metric} (best val.: {peak})\n{DIRECTIONS[direction]}")) +
     facet_grid(mode_ ~ .) +
     ylab(glue("{metric}")) +
     theme(legend.position = "bottom")
