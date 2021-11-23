@@ -15,7 +15,7 @@ names(SEEDS) <- c("123456789",
 MODES <- c("Training", "External validation")
 names(MODES) <- c("training", "testing")
 
-METRICS <- c("Accuracy", "AUC", "Precision", "Recall", "AUPR", "F1", "BCE")
+METRICS <- c("Epoch", "Accuracy", "AUC", "Precision", "Recall", "AUPR", "F1", "BCE")
 
 
 read_mode_seed <- function(direction, mode_, seed) {
@@ -23,8 +23,7 @@ read_mode_seed <- function(direction, mode_, seed) {
            header = FALSE,
            skip = 1,
            col.names = METRICS) %>%
-    mutate(Epoch = 1:n(),
-           mode_ = MODES[mode_],
+    mutate(mode_ = MODES[mode_],
            Seed = SEEDS[seed])
 }
 
@@ -68,7 +67,7 @@ plot_direction_stat <- function(direction, data, metric) {
 
 plot_direction <- function(direction) {
   data <- read_direction(direction)
-  for (metric in METRICS) {
+  for (metric in METRICS[2:length(METRICS)]) {
     plot_direction_stat(direction, data, metric)
   }
 }
