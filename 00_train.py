@@ -1,37 +1,30 @@
+import warnings
+
 from utils import *
 from DL_ClassifierModel import *
+from progressbar import progressbar
 
 
-def train_model(direction):
-    #If you need train the embeddings, you can run " ***dataClass.vectorize(amSize=16, atSize=16)*** ".
-    dataClass = DataClass_normal(dataPath=f"../get_data/Bridge/data/{direction}_training",
-                                 pSeqMaxLen=2644, dSeqMaxLen=188,
-                                 sep=' ')
+warnings.filterwarnings("ignore")
 
-    model = DTI_Bridge(outSize=128,
-                       cHiddenSizeList=[1024],
-                       fHiddenSizeList=[1024,256],
-                       fSize=1024, cSize=dataClass.pContFeat.shape[1],
-                       gcnHiddenSizeList=[128,128], fcHiddenSizeList=[128], nodeNum=64,
-                       hdnDropout=0.5, fcDropout=0.5, device=torch.device('cuda'))
 
-    model.train(dataClass, trainSize=512, batchSize=512, epoch=100,
-                lr1=0.001, stopRounds=-1, earlyStop=30,
-                savePath=f'models/direction', metrics="AUC", report=["ACC", "AUC", "LOSS"],
-                preheat=0)
+DIRECTION = "bztdz"
+CUDA_NUM = 1
+EPOCHS = 100
 
-train_model("dztbz")
 
-"""
-Also, if you want to train the E2E, E2E/go models, you just need to instance another model class (DTI_E2E, DTI_E2E_nogo, see DL_ClassifierModel.py for more details).
+def train_model(direction, seed, cuda_num, dataClass):
+    model = DTI_Bridge(seed=seed,
+                       cSize=dataClass.pContFeat.shape[1],
+                       device=torch.device(f"cuda:{cuda_num}"))
 
-## 3. How to do prediction
-```python
-model = DTI_Bridge(...)
-model.load(path="xxx.pkl", map_location="cpu", dataClass=dataClass)
-model.to_eval_mode()
-Ypre,Y = model.calculate_y_prob_by_iterator(dataClass.one_epoch_batch_data_stream(batchSize=128, type='test', device=torch.device('cpu')))
-```
->**path** is your model saved path, which is a ".pkl" file.
-"""
+    model.train(dataClass, seed, epochs=EPOCHS,
+                savePath=f"models/{direction}_{seed}")
+
+
+dataClass = DataClass_normal(direction=DIRECTION)
+
+for seed in [878912589]:
+    #[123456789, 537912576, 878912589]:
+    train_model(DIRECTION, seed, CUDA_NUM, dataClass)
 
