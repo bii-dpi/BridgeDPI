@@ -48,7 +48,7 @@ plot_direction_stat <- function(direction, data, metric) {
     .[[metric]] %>%
     peak_fn(.) %>%
     round(3)
-    
+  
   plot <- ggplot(data, aes_string(x = "Epoch", y = metric, color = "Seed")) +
     geom_line(size = 1.2) +
     theme_classic() +
@@ -56,11 +56,13 @@ plot_direction_stat <- function(direction, data, metric) {
     facet_grid(mode_ ~ .) +
     ylab(glue("{metric}")) +
     theme(legend.position = "bottom")
-    
-    ggsave(glue("viz/{direction}_{metric}.pdf"),
-           plot, device = "pdf", height=8.29/2, width=9.5/1.3)
-    
-    print(plot)
+  
+  ggsave(glue("viz/{direction}_{metric}.pdf"),
+         plot, device = "pdf", height=8.29/2, width=9.5/1.3)
+  ggsave(glue("viz/{direction}_{metric}.png"),
+         plot, device = "pdf", height=8.29/2, width=9.5/1.3)
+  
+  print(plot)
 }
 
 
