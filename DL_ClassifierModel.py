@@ -20,64 +20,58 @@ class BaseClassifier:
         pass
 
 
-    def train(self, dataClass, seed, trainSize=512, batchSize=512,
-              epochs=100, stopRounds=-1, earlyStop=100, saveRounds=1,
-              preheat=0, lr1=0.001, lr2=0.00003, weightDecay=0.001,
+    def train(self, dataClass, seed, savePath,
+              trainSize=512, batchSize=512,
+              epochs=100, earlyStop=100, saveRounds=1,
+              lr=0.001, weightDecay=0.001,
               isHigherBetter=True, metrics="AUPR", report=["ACC", "AUC",
                                                            "Precision", "Recall",
-                                                           "AUPR", "F1", "LOSS"],
-              savePath=None):
+                                                           "AUPR", "F1", "LOSS"]):
+        # XXX: Why are these two different things? No real reason for this.
         assert batchSize%trainSize==0
-
-        with open(f"{dataClass.direction}_training_perf_{seed}.csv", "w") as f:
-            f.write(",".join(report) + "\n")
-
-        with open(f"{dataClass.direction}_testing_perf_{seed}.csv", "w") as f:
-            f.write(",".join(report) + "\n")
-
-        metrictor = Metrictor()
         self.stepCounter = 0
         self.stepUpdate = batchSize//trainSize
-        self.preheat()
-        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.moduleList.parameters()), lr=lr1, weight_decay=weightDecay)
+
+        # Create the logging files.
+        with open(f"results/{dataClass.direction}_training_perf_{seed}.csv", "w") as f:
+            f.write("Epoch," + ",".join(report) + "\n")
+
+        with open(f"results/{dataClass.direction}_testing_perf_{seed}.csv", "w") as f:
+            f.write("Epoch," + ",".join(report) + "\n")
+
+        # Create the performance-calculator.
+        metrictor = Metrictor()
+
+        # Create the Adam optimizer with L2 regularization and LR scheduler.
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.moduleList.parameters()),
+                                     lr=lr, weight_decay=weightDecay)
         schedulerRLR = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max" if isHigherBetter else "min",
                                                                   factor=0.5, patience=4, verbose=True)
+
+        # Get the training data as an iterable.
         trainStream = dataClass.random_batch_data_stream(seed=seed,
-                                            batchSize=trainSize, type="train", sampleType=self.sampleType, device=self.device)
+                                                         batchSize=trainSize,
+                                                         type="train",
+                                                         device=self.device)
         itersPerEpoch = (dataClass.trainSampleNum+trainSize-1)//trainSize
+
+        # Keep track of current epoch performance, best performance, and the
+        # number of epochs since this best performance.
         mtc,bestMtc,stopSteps = 0.0,0.0,0
+
+        # Get the validation data.
         if dataClass.validSampleNum>0:
-            validStream = dataClass.random_batch_data_stream(seed=seed, batchSize=trainSize,
+            validStream = dataClass.random_batch_data_stream(seed=seed,
+                                                             batchSize=trainSize,
                                                              type="valid",
-                                                             sampleType=self.sampleType,
-                                                             device=self.device, log=True)
+                                                             device=self.device)
 
-        st = time.time()
         for e in range(epochs):
-            if e==preheat:
-                if preheat>0:
-                    self.load(savePath+".pkl")
-                self.normal()
-                optimizer = torch.optim.Adam(self.moduleList.parameters(),
-                                             lr=lr2, weight_decay=weightDecay)
-                schedulerRLR = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max" if isHigherBetter else "min",
-                                                                          factor=0.5, patience=30, verbose=True)
-
             for i in range(itersPerEpoch):
                 self.to_train_mode()
                 X,Y = next(trainStream)
                 if X["res"]:
                     loss = self._train_step(X,Y, optimizer)
-                if stopRounds>0 and (e*itersPerEpoch+i+1)%stopRounds==0:
-                    self.to_eval_mode()
-                    print(f"After iters {e*itersPerEpoch+i+1}: [train] loss= {loss:.3f};", end="")
-                    if dataClass.validSampleNum>0:
-                        X,Y = next(validStream)
-                        loss = self.calculate_loss(X,Y)
-                        print(f" [valid] loss= {loss:.3f};", end="")
-                    restNum = ((itersPerEpoch-i-1)+(epochs-e-1)*itersPerEpoch)*trainSize
-                    speed = (e*itersPerEpoch+i+1)*trainSize/(time.time()-st)
-                    print(" speed: %.3lf items/s; remaining time: %.3lfs;"%(speed, restNum/speed))
 
             if dataClass.validSampleNum>0 and (e+1)%saveRounds==0:
                 self.to_eval_mode()
@@ -89,8 +83,8 @@ class BaseClassifier:
                 metrictor.set_data(Y_pre, Y)
                 print(f"[Total Train]",end="")
                 curr_results = metrictor(report)
-                with open(f"{dataClass.direction}_training_perf_{seed}.csv", "a") as f:
-                    f.write(",".join([str(curr_results[met]) for met in report]) + "\n")
+                with open(f"results/{dataClass.direction}_training_perf_{seed}.csv", "a") as f:
+                    f.write(f"{e+1}," + ",".join([str(curr_results[met]) for met in report]) + "\n")
 
                 print(f"[Total Valid]",end="")
                 Y_pre,Y = self.calculate_y_prob_by_iterator(
@@ -99,12 +93,13 @@ class BaseClassifier:
                                                                   device=self.device))
                 metrictor.set_data(Y_pre, Y)
                 res = metrictor(report)
-                with open(f"{dataClass.direction}_testing_perf_{seed}.csv", "a") as f:
-                    f.write(",".join([str(res[met]) for met in report]) + "\n")
+                with open(f"results/{dataClass.direction}_testing_perf_{seed}.csv", "a") as f:
+                    f.write(f"{e+1}," + ",".join([str(res[met]) for met in report]) + "\n")
 
                 mtc = res[metrics]
                 schedulerRLR.step(mtc)
                 print("=================================")
+
                 if (mtc>bestMtc and isHigherBetter) or (mtc<bestMtc and not isHigherBetter):
                     print(f"Got a better Model with val {metrics}: {mtc:.3f}")
                     bestMtc = mtc
@@ -115,25 +110,6 @@ class BaseClassifier:
                     if stopSteps>=earlyStop:
                         print(f"The val {metrics} has not improved for more than {earlyStop} steps in epoch {e+1}, stop training.")
                         break
-        self.load("%s.pkl"%savePath)
-        self.to_eval_mode()
-        os.rename("%s.pkl"%savePath, "%s_%s.pkl"%(savePath, ("%.3lf"%bestMtc)[2:]))
-        print(f"============ Result ============")
-        print(f"[Total Train]",end="")
-        Y_pre,Y = self.calculate_y_prob_by_iterator(dataClass.one_epoch_batch_data_stream(trainSize, type="train", mode="predict", device=self.device))
-        metrictor.set_data(Y_pre, Y)
-        metrictor(report)
-        print(f"[Total Valid]",end="")
-        Y_pre,Y = self.calculate_y_prob_by_iterator(dataClass.one_epoch_batch_data_stream(trainSize, type="valid", mode="predict", device=self.device))
-        metrictor.set_data(Y_pre, Y)
-        res = metrictor(report)
-        if dataClass.testSampleNum>0:
-            print(f"[Total Test]",end="")
-            Y_pre,Y = self.calculate_y_prob_by_iterator(dataClass.one_epoch_batch_data_stream(trainSize, type="test", mode="predict", device=self.device))
-            metrictor.set_data(Y_pre, Y)
-            metrictor(report)
-        print(f"================================")
-        return res
 
 
     def reset_parameters(self):
@@ -179,37 +155,11 @@ class BaseClassifier:
         print("%d epochs and %.3lf val Score 's model load finished."%(parameters["epochs"], parameters["bestMtc"]))
 
 
-    def _save_emb(self, path):
-        stateDict = {}
-        for module in self.embModuleList:
-            stateDict[module.name] = module.state_dict()
-        torch.save(stateDict, path)
-        print("Pre-trained Embedding saved in '%s'."%path)
-
-
-    def _load_emb(self, path, map_location=None):
-        parameters = torch.load(path, map_location=map_location)
-        for module in self.embModuleList:
-            module.load_state_dict(parameters[module.name])
-        print("Pre-trained Embedding loaded in '%s'."%path)
-
-
-    def preheat(self):
-        for param in self.finetunedEmbList.parameters():
-            param.requires_grad = False
-
-
-    def normal(self):
-        for param in self.finetunedEmbList.parameters():
-            param.requires_grad = True
-
-
     def calculate_y_prob(self, X, mode):
         Y_pre = self.calculate_y_logit(X, mode)["y_logit"]
         return torch.sigmoid(Y_pre)
-    # def calculate_y(self, X):
-    #     Y_pre = self.calculate_y_prob(X)
-    #     return torch.argmax(Y_pre, dim=1)
+
+
     def calculate_loss(self, X, Y):
         out = self.calculate_y_logit(X, "predict")
         Y_logit = out["y_logit"]
@@ -217,11 +167,15 @@ class BaseClassifier:
         addLoss = 0.0
         if "loss" in out: addLoss += out["loss"]
         return self.criterion(Y_logit, Y) + addLoss
+
+
     def calculate_indicator_by_iterator(self, dataStream, classNum, report):
         metrictor = Metrictor(classNum)
         Y_prob_pre,Y = self.calculate_y_prob_by_iterator(dataStream)
         metrictor.set_data(Y_prob_pre, Y)
         return metrictor(report)
+
+
     def calculate_y_prob_by_iterator(self, dataStream):
         YArr,Y_preArr = [],[]
         while True:
@@ -234,15 +188,18 @@ class BaseClassifier:
             Y_preArr.append(Y_pre)
         YArr,Y_preArr = np.concatenate(YArr).astype("int32"),np.concatenate(Y_preArr).astype("float32")
         return Y_preArr, YArr
-    # def calculate_y_by_iterator(self, dataStream):
-    #     Y_preArr, YArr = self.calculate_y_prob_by_iterator(dataStream)
-    #     return Y_preArr.argmax(axis=1), YArr
+
+
     def to_train_mode(self):
         for module in self.moduleList:
             module.train()
+
+
     def to_eval_mode(self):
         for module in self.moduleList:
             module.eval()
+
+
     def _train_step(self, X, Y, optimizer):
         self.stepCounter += 1
         if self.stepCounter<self.stepUpdate:
@@ -257,8 +214,6 @@ class BaseClassifier:
             nn.utils.clip_grad_norm_(self.moduleList.parameters(), max_norm=20, norm_type=2)
             optimizer.step()
             optimizer.zero_grad()
-            #self.schedulerWU.step_and_update_lr()
-            #self.schedulerWU.zero_grad()
         return loss*self.stepUpdate
 
 
@@ -268,7 +223,7 @@ class DTI_Bridge(BaseClassifier):
                  fSize=1024,
                  gcnHiddenSizeList=[128,128], fcHiddenSizeList=[128], nodeNum=64,
                  resnet=True,
-                 hdnDropout=0.5, fcDropout=0.5, sampleType="CEL",
+                 hdnDropout=0.5, fcDropout=0.5,
                  useFeatures = {"kmers":True,"pSeq":True,"FP":True,"dSeq":True},
                  maskDTI=False):
         torch.manual_seed(seed)
@@ -295,7 +250,6 @@ class DTI_Bridge(BaseClassifier):
         self.finetunedEmbList = nn.ModuleList([])
         self.moduleList = nn.ModuleList([self.nodeEmbedding,self.cFcLinear,self.fFcLinear,self.nodeGCN,self.fcLinear,
                                          self.amEmbedding, self.pCNN, self.pFcLinear, self.dCNN, self.dFcLinear])
-        self.sampleType = sampleType
         self.device = device
         self.resnet = resnet
         self.nodeNum = nodeNum

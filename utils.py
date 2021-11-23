@@ -1,4 +1,4 @@
-import os, logging, pickle, torch, gc, deepchem
+import os, pickle, torch, gc, deepchem
 
 import numpy as np
 import pandas as pd
@@ -13,9 +13,6 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 from deepchem.models.graph_models import GraphConvModel
 from sklearn.feature_extraction.text import CountVectorizer
-
-
-logging.basicConfig(format="%(asctime)s : %(levelname)s : %(message)s", level=logging.INFO)
 
 
 class DataClass_normal:
@@ -206,34 +203,31 @@ class DataClass_normal:
         print("Finished.")
 
 
-    def random_batch_data_stream(self, seed, batchSize=32, type="train", sampleType="PWRL", device=torch.device("cpu"), log=False):
+    def random_batch_data_stream(self, seed, batchSize, type, device=torch.device("cpu")):
         np.random.seed(seed)
 
-        if sampleType=="PWRL":
-            pass
-        elif sampleType=="CEL":
-            if type=="train":
-                idList = list(self.trainIdList)
-            elif type=="valid":
-                idList = list(self.validIdList)
-            else:
-                idList = list(self.testIdList)
-            while True:
-                np.random.shuffle(idList)
-                for i in range((len(idList)+batchSize-1)//batchSize):
-                    samples = idList[i*batchSize:(i+1)*batchSize]
-                    edges = self.eSeqData[samples]
-                    pTokenizedNames,dTokenizedNames = [i[0] for i in edges],[i[1] for i in edges]
-                    yield {
-                            "res":True, \
-                            "aminoSeq":torch.tensor(self.pSeqTokenized[pTokenizedNames], dtype=torch.long).to(device), \
-                            "aminoCtr":torch.tensor(self.pContFeat[pTokenizedNames], dtype=torch.float32).to(device), \
-                            "pSeqLen":torch.tensor(self.pSeqLen[pTokenizedNames], dtype=torch.int32).to(device), \
-                            "atomFea":torch.tensor(self.dGraphFeat[dTokenizedNames], dtype=torch.float32).to(device), \
-                            "atomFin":torch.tensor(self.dFinprFeat[dTokenizedNames], dtype=torch.float32).to(device), \
-                            "atomSeq":torch.tensor(self.dSeqTokenized[dTokenizedNames], dtype=torch.long).to(device), \
-                            "dSeqLen":torch.tensor(self.dSeqLen[dTokenizedNames], dtype=torch.int32).to(device), \
-                          }, torch.tensor([i[2] for i in edges], dtype=torch.float32).to(device)
+        if type=="train":
+            idList = list(self.trainIdList)
+        elif type=="valid":
+            idList = list(self.validIdList)
+        else:
+            idList = list(self.testIdList)
+        while True:
+            np.random.shuffle(idList)
+            for i in range((len(idList)+batchSize-1)//batchSize):
+                samples = idList[i*batchSize:(i+1)*batchSize]
+                edges = self.eSeqData[samples]
+                pTokenizedNames,dTokenizedNames = [i[0] for i in edges],[i[1] for i in edges]
+                yield {
+                        "res":True, \
+                        "aminoSeq":torch.tensor(self.pSeqTokenized[pTokenizedNames], dtype=torch.long).to(device), \
+                        "aminoCtr":torch.tensor(self.pContFeat[pTokenizedNames], dtype=torch.float32).to(device), \
+                        "pSeqLen":torch.tensor(self.pSeqLen[pTokenizedNames], dtype=torch.int32).to(device), \
+                        "atomFea":torch.tensor(self.dGraphFeat[dTokenizedNames], dtype=torch.float32).to(device), \
+                        "atomFin":torch.tensor(self.dFinprFeat[dTokenizedNames], dtype=torch.float32).to(device), \
+                        "atomSeq":torch.tensor(self.dSeqTokenized[dTokenizedNames], dtype=torch.long).to(device), \
+                        "dSeqLen":torch.tensor(self.dSeqLen[dTokenizedNames], dtype=torch.int32).to(device), \
+                      }, torch.tensor([i[2] for i in edges], dtype=torch.float32).to(device)
 
 
     def one_epoch_batch_data_stream(self, batchSize=32, type="valid", mode="predict", device=torch.device("cpu")):
