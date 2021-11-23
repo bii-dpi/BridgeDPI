@@ -60,7 +60,7 @@ plot_direction_stat <- function(direction, data, metric) {
   ggsave(glue("viz/{direction}_{metric}.pdf"),
          plot, device = "pdf", height=8.29/2, width=9.5/1.3)
   ggsave(glue("viz/{direction}_{metric}.png"),
-         plot, device = "pdf", height=8.29/2, width=9.5/1.3)
+         plot, device = "png", height=8.29/2, width=9.5/1.3)
   
   print(plot)
 }
