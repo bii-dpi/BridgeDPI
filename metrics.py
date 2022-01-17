@@ -33,7 +33,10 @@ class Metrictor:
     def __init__(self):
         self._reporter_ = {"ACC":self.ACC, "AUC":self.AUC,
                            "Precision":self.Precision, "Recall":self.Recall,
-                           "AUPR":self.AUPR, "F1":self.F1, "LOSS":self.LOSS}
+                           "AUPR":self.AUPR, "F1":self.F1, "LOSS":self.LOSS,
+                           "recall_1": self.recall_1, "recall_5": self.recall_5,
+                           "recall_10": self.recall_10,
+                           "recall_25": self.recall_25, "recall_50": self.recall_50}
 
 
     def __call__(self, report, end='\n'):
@@ -99,6 +102,26 @@ class Metrictor:
         return LOSS(self.Y_prob_pre,self.Y)
 
 
+    def recall_1(self):
+        return RECALL_X(self.Y, self.Y_pre, 0.01)
+
+
+    def recall_5(self):
+        return RECALL_X(self.Y, self.Y_pre, 0.05)
+
+
+    def recall_10(self):
+        return RECALL_X(self.Y, self.Y_pre, 0.1)
+
+
+    def recall_25(self):
+        return RECALL_X(self.Y, self.Y_pre, 0.25)
+
+
+    def recall_50(self):
+        return RECALL_X(self.Y, self.Y_pre, 0.50)
+
+
 def ACC(Y_pre, Y):
     return (Y_pre==Y).sum() / len(Y)
 
@@ -113,6 +136,14 @@ def Precision(Y_pre, Y):
 
 def Recall(Y_pre, Y):
     return skmetrics.recall_score(Y, Y_pre)
+
+
+def RECALL_X(Y, Y_pre, x):
+    precisions, recalls, _ = \
+        skmetrics.precision_recall_curve(Y, Y_pre)
+    precisions = np.abs(np.array(precisions) - x)
+
+    return recalls[np.argmin(precisions)]
 
 
 def AUPR(Y_pre, Y):

@@ -8,8 +8,8 @@ from progressbar import progressbar
 warnings.filterwarnings("ignore")
 
 
-DIRECTION = "bztdz"
-CUDA_NUM = 3
+DIRECTION = "btd"
+CUDA_NUM = 2
 EPOCHS = 100
 
 

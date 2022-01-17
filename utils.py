@@ -51,7 +51,7 @@ class DataClass_normal:
         print("1. Loading features...")
         path = os.path.join(f"{dataPath}_training")
         with open(path, "r") as f:
-            curr_lines = f.readlines()
+            curr_lines = f.readlines()[:1024]
 
         for line in tqdm(curr_lines):
             drug, protein, lab = line.strip("\n").strip().split(sep)
@@ -83,7 +83,7 @@ class DataClass_normal:
 
         path = os.path.join(f"{dataPath}_testing")
         with open(path, "r") as f:
-            curr_lines = f.readlines()
+            curr_lines = f.readlines()[:1024]
 
         for line in tqdm(curr_lines):
             drug, protein, lab = line.strip("\n").strip().split(sep)
@@ -154,7 +154,7 @@ class DataClass_normal:
         # Split the examples by ID into training and validation.
         def get_len(dataPath, suffix):
             with open(f"{dataPath}_{suffix}", "r") as f:
-                return len(f.readlines())
+                return 1024#len(f.readlines())
 
 
         self.testIdList = []

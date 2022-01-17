@@ -25,8 +25,9 @@ class BaseClassifier:
               epochs=100, earlyStop=100, saveRounds=1,
               lr=0.001, weightDecay=0.001,
               isHigherBetter=True, metrics="AUPR", report=["ACC", "AUC",
-                                                           "Precision", "Recall",
-                                                           "AUPR", "F1", "LOSS"]):
+                                                           "AUPR", "F1", "LOSS",
+                                                           "recall_1",
+"recall_5", "recall_10", "recall_25", "recall_50"]):
         # XXX: Why are these two different things? No real reason for this.
         assert batchSize%trainSize==0
         self.stepCounter = 0
