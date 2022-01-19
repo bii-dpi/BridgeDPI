@@ -9,7 +9,7 @@ warnings.filterwarnings("ignore")
 
 
 DIRECTION = "btd"
-CUDA_NUM = 2
+CUDA_NUM = 0
 EPOCHS = 100
 
 
@@ -24,6 +24,6 @@ def train_model(direction, seed, cuda_num, dataClass):
 
 dataClass = DataClass_normal(direction=DIRECTION)
 
-for seed in [537912576, 123456789, 878912589]:
+for seed in [123456789]:
     train_model(DIRECTION, seed, CUDA_NUM, dataClass)
 

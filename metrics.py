@@ -49,6 +49,7 @@ class Metrictor:
         return res
 
 
+
     def set_data(self, Y_prob_pre, Y, threshold=0.5):
         self.Y = Y.astype('int')
         if len(Y_prob_pre.shape)>1:
@@ -57,6 +58,7 @@ class Metrictor:
         else:
             self.Y_prob_pre = Y_prob_pre
             self.Y_pre = (Y_prob_pre>threshold).astype('int')
+
 
 
     @staticmethod
@@ -91,7 +93,7 @@ class Metrictor:
 
 
     def AUPR(self):
-        return AUPR(self.Y_pre, self.Y)
+        return AUPR(self.Y_prob_pre, self.Y)
 
 
     def F1(self):
@@ -103,23 +105,23 @@ class Metrictor:
 
 
     def recall_1(self):
-        return RECALL_X(self.Y, self.Y_pre, 0.01)
+        return RECALL_X(self.Y, self.Y_prob_pre, 0.01)
 
 
     def recall_5(self):
-        return RECALL_X(self.Y, self.Y_pre, 0.05)
+        return RECALL_X(self.Y, self.Y_prob_pre, 0.05)
 
 
     def recall_10(self):
-        return RECALL_X(self.Y, self.Y_pre, 0.1)
+        return RECALL_X(self.Y, self.Y_prob_pre, 0.1)
 
 
     def recall_25(self):
-        return RECALL_X(self.Y, self.Y_pre, 0.25)
+        return RECALL_X(self.Y, self.Y_prob_pre, 0.25)
 
 
     def recall_50(self):
-        return RECALL_X(self.Y, self.Y_pre, 0.50)
+        return RECALL_X(self.Y, self.Y_prob_pre, 0.50)
 
 
 def ACC(Y_pre, Y):
