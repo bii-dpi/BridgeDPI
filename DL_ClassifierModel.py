@@ -24,20 +24,19 @@ class BaseClassifier:
               trainSize=512, batchSize=512,
               epochs=100, earlyStop=100, saveRounds=1,
               lr=0.001, weightDecay=0.001,
-              isHigherBetter=True, metrics="AUPR", report=["ACC", "AUC",
-                                                           "AUPR", "F1", "LOSS",
-                                                           "recall_1",
-"recall_5", "recall_10", "recall_25", "recall_50"]):
+              isHigherBetter=True, metrics="AUPR",
+              report=["AUC", "AUPR", "recall_1", "recall_5",
+                      "recall_10", "recall_25", "recall_50"]):
         # XXX: Why are these two different things? No real reason for this.
         assert batchSize%trainSize==0
         self.stepCounter = 0
         self.stepUpdate = batchSize//trainSize
 
         # Create the logging files.
-        with open(f"results/{dataClass.direction}_training_perf_{seed}.csv", "w") as f:
+        with open(f"results/{dataClass.direction}_training_perf.csv", "w") as f:
             f.write("Epoch," + ",".join(report) + "\n")
 
-        with open(f"results/{dataClass.direction}_testing_perf_{seed}.csv", "w") as f:
+        with open(f"results/{dataClass.direction}_testing_perf.csv", "w") as f:
             f.write("Epoch," + ",".join(report) + "\n")
 
         # Create the performance-calculator.
@@ -74,7 +73,8 @@ class BaseClassifier:
                 if X["res"]:
                     loss = self._train_step(X,Y, optimizer)
 
-            if dataClass.validSampleNum>0 and (e+1)%saveRounds==0:
+            if dataClass.validSampleNum>0 and e + 1 == epochs:
+            #if dataClass.validSampleNum>0 and (e+1)%saveRounds==0:
                 self.to_eval_mode()
                 print(f"========== Epoch:{e+1:5d} ==========")
                 Y_pre,Y = self.calculate_y_prob_by_iterator(
@@ -84,8 +84,11 @@ class BaseClassifier:
                 metrictor.set_data(Y_pre, Y)
                 print(f"[Total Train]",end="")
                 curr_results = metrictor(report)
+                '''
                 with open(f"results/{dataClass.direction}_training_perf_{seed}.csv", "a") as f:
                     f.write(f"{e+1}," + ",".join([str(curr_results[met]) for met in report]) + "\n")
+                '''
+                training_row = ",".join([str(curr_results[met]) for met in report])
 
                 print(f"[Total Valid]",end="")
                 Y_pre,Y = self.calculate_y_prob_by_iterator(
@@ -94,8 +97,11 @@ class BaseClassifier:
                                                                   device=self.device))
                 metrictor.set_data(Y_pre, Y)
                 res = metrictor(report)
+                '''
                 with open(f"results/{dataClass.direction}_testing_perf_{seed}.csv", "a") as f:
                     f.write(f"{e+1}," + ",".join([str(res[met]) for met in report]) + "\n")
+                '''
+                validation_row = ",".join([str(res[met]) for met in report])
 
                 mtc = res[metrics]
                 schedulerRLR.step(mtc)
@@ -111,6 +117,8 @@ class BaseClassifier:
                     if stopSteps>=earlyStop:
                         print(f"The val {metrics} has not improved for more than {earlyStop} steps in epoch {e+1}, stop training.")
                         break
+
+        return training_row, validation_row
 
 
     def reset_parameters(self):
