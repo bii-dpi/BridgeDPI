@@ -36,7 +36,10 @@ class Metrictor:
                            "AUPR":self.AUPR, "F1":self.F1, "LOSS":self.LOSS,
                            "recall_1": self.recall_1, "recall_5": self.recall_5,
                            "recall_10": self.recall_10,
-                           "recall_25": self.recall_25, "recall_50": self.recall_50}
+                           "recall_25": self.recall_25, "recall_50": self.recall_50,
+                           "LogAUC": self.logAUC, "EF_1": self.ef_1,
+                           "EF_5": self.ef_5, "EF_10": self.ef_10,
+                           "EF_25": self.ef_25, "EF_50": self.ef_50}
 
 
     def __call__(self, report, end='\n'):
@@ -84,6 +87,10 @@ class Metrictor:
         return AUC(self.Y_prob_pre,self.Y)
 
 
+    def logAUC(self):
+        return LogAUC(self.Y_prob_pre,self.Y)
+
+
     def Precision(self):
         return Precision(self.Y_pre, self.Y)
 
@@ -124,6 +131,26 @@ class Metrictor:
         return RECALL_X(self.Y, self.Y_prob_pre, 0.50)
 
 
+    def ef_1(self):
+        return EF(self.Y, self.Y_prob_pre, 0.01)
+
+
+    def ef_5(self):
+        return EF(self.Y, self.Y_prob_pre, 0.05)
+
+
+    def ef_10(self):
+        return EF(self.Y, self.Y_prob_pre, 0.1)
+
+
+    def ef_25(self):
+        return EF(self.Y, self.Y_prob_pre, 0.25)
+
+
+    def ef_50(self):
+        return EF(self.Y, self.Y_prob_pre, 0.50)
+
+
 def ACC(Y_pre, Y):
     return (Y_pre==Y).sum() / len(Y)
 
@@ -138,6 +165,32 @@ def Precision(Y_pre, Y):
 
 def Recall(Y_pre, Y):
     return skmetrics.recall_score(Y, Y_pre)
+
+
+def EF(y, Y_pre, prec_val, sorted_=False):
+    if not sorted_:
+        sorted_indices = np.argsort(Y_pre)[::-1]
+        y = y[sorted_indices]
+        Y_pre = Y_pre[sorted_indices]
+
+    num_pos = np.sum(y)
+    len_to_take = int(len(y) * prec_val)
+
+    return np.sum(y[:len_to_take]) / num_pos
+
+
+def LogAUC(Y_pre, y):
+    sorted_indices = np.argsort(Y_pre)[::-1]
+    y = y[sorted_indices]
+    Y_pre = Y_pre[sorted_indices]
+    num_pos = np.sum(y)
+
+    prec_vals = np.arange(1, 101) / 1000
+    recalls = []
+    for prec_val in prec_vals:
+        recalls.append(EF(y, Y_pre, prec_val, True))
+
+    return np.trapz(y=recalls, x=np.log10(prec_vals))
 
 
 def RECALL_X(Y, Y_pre, x):

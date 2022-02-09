@@ -25,8 +25,10 @@ class BaseClassifier:
               epochs=100, earlyStop=100, saveRounds=1,
               lr=0.001, weightDecay=0.001,
               isHigherBetter=True, metrics="AUPR",
-              report=["AUC", "AUPR", "recall_1", "recall_5",
-                      "recall_10", "recall_25", "recall_50"]):
+              report=["AUC", "AUPR", "LogAUC",
+                      "recall_1", "recall_5",
+                      "recall_10", "recall_25", "recall_50",
+                      "EF_1", "EF_5", "EF_10", "EF_25", "EF_50"]):
         # XXX: Why are these two different things? No real reason for this.
         assert batchSize%trainSize==0
         self.stepCounter = 0
@@ -230,7 +232,7 @@ class DTI_Bridge(BaseClassifier):
     def __init__(self, seed, cSize, device,
                  outSize=128, cHiddenSizeList=[1024], fHiddenSizeList=[1024,256],
                  fSize=1024,
-                 gcnHiddenSizeList=[128,128], fcHiddenSizeList=[128], nodeNum=64,
+                 gcnHiddenSizeList=[128,128], fcHiddenSizeList=[128], nodeNum=0,
                  resnet=True,
                  hdnDropout=0.5, fcDropout=0.5,
                  useFeatures = {"kmers":True,"pSeq":True,"FP":True,"dSeq":True},

@@ -1,1 +1,1 @@
-Epoch,AUC,AUPR,recall_1,recall_5,recall_10,recall_25,recall_50
+Epoch,AUC,AUPR,LogAUC,recall_1,recall_5,recall_10,recall_25,recall_50,EF_1,EF_5,EF_10,EF_25,EF_50

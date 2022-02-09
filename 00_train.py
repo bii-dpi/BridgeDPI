@@ -8,7 +8,7 @@ from progressbar import progressbar
 warnings.filterwarnings("ignore")
 
 
-CUDA_NUM = 0
+CUDA_NUM = 2
 EPOCHS = 100
 
 
@@ -28,11 +28,13 @@ directions = [dir_.replace("_dir_dict.pkl", "")
               for dir_ in os.listdir("../get_data/Shallow/directions")]
 
 training_rows = [",".join(["direction",
-                           "AUC", "AUPR", "recall_1", "recall_5",
-                           "recall_10", "recall_25", "recall_50"])]
+                           "AUC", "AUPR", "LogAUC", "recall_1", "recall_5",
+                           "recall_10", "recall_25", "recall_50",
+                          "EF_1", "EF_5", "EF_10", "EF_25" "EF_50"])]
 validation_rows = [",".join(["direction",
-                             "AUC", "AUPR", "recall_1", "recall_5",
-                             "recall_10", "recall_25", "recall_50"])]
+                           "AUC", "AUPR", "LogAUC", "recall_1", "recall_5",
+                           "recall_10", "recall_25", "recall_50",
+                           "EF_1", "EF_5", "EF_10", "EF_25" "EF_50"])]
 for direction in progressbar(directions):
     training_row, validation_row = train_model(direction)
     training_rows.append(direction + "," + training_row)
